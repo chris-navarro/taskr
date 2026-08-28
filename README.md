@@ -47,6 +47,10 @@ The dashboard gives you an immediate view of your workload:
 Milestone cards link directly to the related task, so a summary is always one
 click away from the full record.
 
+The dashboard also provides direct access to Calendar, Kanban, Work Journal,
+and Progress History views. Project progress and upcoming deadlines sit beside
+each other so planning information is easy to compare.
+
 ### Task Management
 
 Create and manage tasks with:
@@ -124,6 +128,20 @@ not as a replacement for human judgment.
 Progress History displays each task's planned date window, current progress,
 and historical progress markers. The calendar axis helps you see the project
 window, while markers show how progress changed over time.
+
+### Calendar and Kanban Views
+
+Kanban groups your tasks by status and supports drag-and-drop status changes.
+Each move opens a full work-update form, so the change records progress, hours,
+accomplishments, blockers, and next steps in the task history. The view is
+scoped to the signed-in user.
+
+### Excel Export
+
+Work Journal reports can also be downloaded as `.xlsx` files. The spreadsheet
+contains task, category, worked date, progress, hours, status, accomplishment,
+blocker, next-step, and remarks columns, making it ready for spreadsheet
+analysis without rebuilding the report by hand.
 
 ### Administrator Controls
 
@@ -632,6 +650,34 @@ The architecture is ready for further work, including:
 - Richer Gantt calendar scaling
 - Configurable retention and audit policies
 - Secure user provisioning and password reset flows
+
+## Objective Revalidation
+
+The current implementation now covers the single-user foundation and the main
+visual/reporting workflow:
+
+| Objective | Current state |
+| --- | --- |
+| MongoDB and SQLite3 storage | Implemented and selectable by administrators |
+| Authentication and RBAC | Implemented |
+| Task and historical update CRUD | Implemented |
+| Dashboard widgets and milestone cards | Implemented |
+| Gantt progress history with date axis | Implemented |
+| Calendar view | Deferred |
+| Drag-and-drop Kanban with historical updates | Implemented |
+| Weekly through year-end reports | Implemented |
+| CSV, PDF, DOCX, and Excel export | Implemented |
+| Productivity analytics and comparison trends | Implemented |
+| Admin audit and user activity reports | Implemented |
+| Notifications and email reminders | Not implemented |
+| AI summaries | Not implemented |
+| Team collaboration and team-level reporting | Deliberately deferred |
+
+Team-level reporting should be the next major phase. It should introduce shared
+team/project ownership, membership and visibility rules, manager rollups, and
+careful aggregation of individual activity. Building it after the current
+single-user workflow is stable avoids mixing personal and team metrics and
+makes permissions easier to reason about.
 
 ## License
 

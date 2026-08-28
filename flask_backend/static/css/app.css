@@ -52,6 +52,13 @@ h1, h2, p { margin-top: 0; }
 .dashboard-panel h2 { margin: 28px 0 10px; font-size: 1.45rem; }
 .dashboard-panel p { color: var(--muted); }
 .dashboard-task-link { display: inline-flex; gap: 8px; margin-top: 24px; color: var(--accent); font-weight: 700; }
+.dashboard-home { padding-bottom: 48px; }
+.dashboard-kpi { border-top: 3px solid var(--accent); }
+.dashboard-kpi h2 { margin-top: 8px; font-size: 2rem; }
+.dashboard-progress-row { display: block; padding: 13px 0; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
+.dashboard-progress-row:last-child { border-bottom: 0; }
+.dashboard-progress-row:hover { color: var(--accent-dark); }
+.dashboard-progress-row .progress { height: 7px; }
 .milestone-watch { padding: 0; }
 .milestone-watch > .card-header { padding: 0 0 16px; border: 0; background: transparent; }
 .milestone-card { position: relative; overflow: hidden; border-left: 3px solid transparent !important; color: var(--ink); transition: border-color .2s ease, background-color .2s ease, transform .2s ease; animation: milestone-enter .45s ease both; animation-delay: calc(var(--milestone-order, 0) * 70ms); }
@@ -83,10 +90,20 @@ h1, h2, p { margin-top: 0; }
 .planned-actual-bar .actual { background: var(--accent); }
 .journal-entry:last-child, .gantt-row:last-child { border-bottom: 0 !important; }
 .gantt-track { position: relative; height: 14px; border-radius: 7px; background: var(--line); }
+.gantt-schedule { position: absolute; height: 100%; border-radius: 7px; background: #dce8d7; }
 .gantt-fill { height: 100%; border-radius: inherit; background: var(--accent); transition: width .6s ease; }
 .gantt-marker { position: absolute; top: -4px; width: 3px; height: 22px; border-radius: 2px; background: var(--ink); transform: translateX(-1px); }
 .gantt-axis { position: relative; height: 28px; margin-top: 10px; color: var(--muted); font-size: .7rem; }
 .gantt-axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.calendar-grid { display: grid; grid-template-columns: minmax(180px, 2fr) repeat(3, minmax(100px, 1fr)); }
+.calendar-grid > * { padding: 12px; border-bottom: 1px solid var(--line); }
+.calendar-heading { color: var(--muted); background: #fbfcfa; font-size: .78rem; font-weight: 750; text-transform: uppercase; }
+.calendar-task { color: var(--accent-dark); font-weight: 700; text-decoration: none; }
+.kanban-column { min-height: 340px; }
+.kanban-dropzone { min-height: 280px; background: #fbfcfa; }
+.kanban-dropzone.is-over { background: #fff0eb; }
+.kanban-card.is-dragging { opacity: .45; }
+.kanban-empty { padding: 20px 0; text-align: center; }
 .admin-hero { width: min(960px, calc(100% - 48px)); margin: 0 auto; border: 1px solid var(--line); border-radius: 18px; background: linear-gradient(120deg, var(--sage), #fff8f4); }
 .admin-hero h1 { margin-bottom: 10px; font-size: clamp(2.1rem, 5vw, 3.5rem); letter-spacing: -.04em; }
 .admin-hero p:last-child { color: var(--muted); }

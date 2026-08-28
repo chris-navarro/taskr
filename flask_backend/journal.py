@@ -241,5 +241,41 @@ def gantt():
         axis.append({"position": fraction * 100, "label": (chart_start + timedelta(seconds=span * fraction)).strftime("%b %d, %Y")})
     for task in tasks:
         updates = TaskUpdate.for_task(task["_id"])
+        task_span = max((task.get("due_date") - task.get("start_date")).total_seconds(), 0) if task.get("start_date") and task.get("due_date") else 0
+        task["gantt_left"] = max(0, min(100, (task["start_date"] - chart_start).total_seconds() / span * 100)) if task.get("start_date") else 0
+        task["gantt_width"] = max(1, min(100 - task["gantt_left"], task_span / span * 100)) if task_span else 1
+        for update in updates:
+            update["gantt_left"] = max(0, min(100, (update.get("worked_at") - chart_start).total_seconds() / span * 100)) if update.get("worked_at") else 0
         history.append({"task": task, "updates": updates})
     return render_template("journal/gantt.html", history=history, axis=axis)
+
+
+@journal.route("/kanban")
+@login_required
+def kanban():
+    statuses = ["Planning", "In Progress", "On Hold", "Completed", "Cancelled"]
+    columns = {status: [] for status in statuses}
+    for task in Task.all(owner_id=current_user.id):
+        columns.setdefault(task.get("status") or "Planning", []).append(task)
+    return render_template("journal/kanban.html", columns=columns, statuses=statuses)
+
+
+@journal.route("/export.xlsx")
+@login_required
+def export_xlsx():
+    from openpyxl import Workbook
+    report_data = report_from_request()
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Journal"
+    sheet.append(["Task", "Category", "Worked at", "Progress", "Hours", "Status", "Accomplishment", "Blockers", "Next steps", "Remarks"])
+    for entry in report_data["entries"]:
+        for update in entry["updates"]:
+            sheet.append([entry["task"].get("subject", ""), entry["task"].get("category", ""), update.get("worked_at"), update.get("progress", 0), update.get("hours_worked", 0), update.get("status", ""), update.get("accomplishment", ""), update.get("blockers", ""), update.get("next_steps", ""), update.get("remarks", "")])
+    for cell in sheet[1]:
+        cell.font = cell.font.copy(bold=True)
+    sheet.freeze_panes = "A2"
+    from io import BytesIO
+    buffer = BytesIO()
+    workbook.save(buffer)
+    return Response(buffer.getvalue(), mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=taskr-journal.xlsx"})

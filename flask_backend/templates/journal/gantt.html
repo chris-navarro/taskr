@@ -9,7 +9,7 @@
         {% for item in history %}
         <article class="gantt-row py-3 border-bottom">
             <div class="d-flex justify-content-between gap-3 mb-2"><a class="fw-semibold" href="{{ url_for('tasks.detail', task_id=item.task._id) }}">{{ item.task.subject }}</a><span class="small text-muted">{{ item.task.start_date.strftime('%b %d, %Y') if item.task.start_date else '-' }} to {{ item.task.due_date.strftime('%b %d, %Y') if item.task.due_date else '-' }}</span></div>
-            <div class="gantt-track"><div class="gantt-fill" data-progress="{{ item.task.progress or 0 }}"></div>{% for update in item.updates %}<span class="gantt-marker" data-progress="{{ update.progress or 0 }}" title="{{ update.worked_at.strftime('%b %d, %Y') if update.worked_at else 'Update' }}: {{ update.progress or 0 }}%"></span>{% endfor %}</div>
+            <div class="gantt-track"><div class="gantt-schedule" data-left="{{ item.task.gantt_left }}" data-width="{{ item.task.gantt_width }}"><div class="gantt-fill" data-progress="{{ item.task.progress or 0 }}"></div>{% for update in item.updates %}<span class="gantt-marker" data-left="{{ update.gantt_left }}" title="{{ update.worked_at.strftime('%b %d, %Y') if update.worked_at else 'Update' }}: {{ update.progress or 0 }}%"></span>{% endfor %}</div></div>
             <div class="small text-muted mt-2">{{ item.updates|length }} updates · {{ item.task.progress or 0 }}% current progress</div>
         </article>
         {% else %}<p class="text-muted mb-0">Create a task update to build progress history.</p>{% endfor %}

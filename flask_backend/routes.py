@@ -17,6 +17,7 @@ from .database import mongo
 from .extensions import bcrypt
 from .models.user import User
 from .models.task import Task
+from .models.task_update import TaskUpdate
 from .models.workspace_settings import WorkspaceSettings
 from .models.audit_log import AuditLog
 
@@ -133,10 +134,22 @@ def dashboard():
     for task in milestones:
         task["lifecycle_badge"] = task_lifecycle_badge(task)
         task["timeline_badge"], task["timeline_color"] = task_timeline_badge(task)
+    upcoming_deadlines = sorted(
+        [task for task in tasks if task.get("due_date") and task.get("status") != "Completed"],
+        key=lambda task: task["due_date"],
+    )[:5]
+    progress_tasks = sorted(tasks, key=lambda task: task.get("updated_at") or datetime.min, reverse=True)[:6]
+    recent_updates = TaskUpdate.by_user(current_user.id)[:6]
+    for update in recent_updates:
+        related_task = Task.get(update.get("task_id"))
+        update["project_id"] = related_task.get("project_id") if related_task else "Unassigned"
     return render_template(
         "dashboard.html",
         counts=counts,
         milestones=milestones,
+        upcoming_deadlines=upcoming_deadlines,
+        progress_tasks=progress_tasks,
+        recent_updates=recent_updates,
     )
 
 

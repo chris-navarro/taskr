@@ -30,6 +30,11 @@
         bar.style.width = ((Number(bar.dataset.width) || 0) / maxPlannedActual * 100) + "%";
     });
     document.querySelectorAll(".gantt-marker").forEach(function (marker) {
-        marker.style.left = (marker.dataset.progress || "0") + "%";
+        const schedule = marker.closest(".gantt-schedule");
+        marker.style.left = (((Number(marker.dataset.left) || 0) - Number(schedule.dataset.left || 0)) / (Number(schedule.dataset.width) || 1) * 100) + "%";
+    });
+    document.querySelectorAll(".gantt-schedule").forEach(function (schedule) {
+        schedule.style.left = (schedule.dataset.left || 0) + "%";
+        schedule.style.width = (schedule.dataset.width || 1) + "%";
     });
 })();
