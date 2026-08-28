@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+
+{% block title %}User Activity Log{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4 journal-page">
+    <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
+        <div><p class="eyebrow mb-1">Administrator view</p><h1 class="h2">User activity log</h1><p class="text-muted mb-0">Historical account activity without passwords or form contents.</p></div>
+        <a class="btn btn-outline-secondary" href="{{ url_for('routes.admin') }}">Back to administration</a>
+    </div>
+    <form class="row g-2 align-items-end mb-4" method="GET">
+        <div class="col-md-3"><label class="form-label" for="activityUser">User</label><select class="form-select" id="activityUser" name="user_id"><option value="">All users</option>{% for user in users %}<option value="{{ user.id }}" {% if request.args.get('user_id') == user.id %}selected{% endif %}>{{ user.username }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label" for="activityAction">Action</label><select class="form-select" id="activityAction" name="action"><option value="">All actions</option><option value="view" {% if request.args.get('action') == 'view' %}selected{% endif %}>Views</option><option value="action" {% if request.args.get('action') == 'action' %}selected{% endif %}>Actions</option><option value="logout" {% if request.args.get('action') == 'logout' %}selected{% endif %}>Logouts</option></select></div>
+        <div class="col-md-2"><label class="form-label" for="activityStart">From</label><input class="form-control" id="activityStart" type="date" name="start" value="{{ request.args.get('start', '') }}"></div>
+        <div class="col-md-2"><label class="form-label" for="activityEnd">To</label><input class="form-control" id="activityEnd" type="date" name="end" value="{{ request.args.get('end', '') }}"></div>
+        <div class="col-md-3 d-flex gap-2"><button class="btn btn-primary" type="submit">Apply filters</button><a class="btn btn-outline-secondary" href="{{ url_for('routes.activity_csv', user_id=request.args.get('user_id'), action=request.args.get('action'), start=request.args.get('start'), end=request.args.get('end')) }}"><i class="bi bi-download"></i> CSV</a></div>
+    </form>
+    <section class="card shadow-sm"><div class="table-responsive"><table class="table align-middle mb-0"><thead class="table-light"><tr><th>Recorded</th><th>User</th><th>User ID</th><th>Action</th><th>Method</th><th>Status</th><th>Endpoint</th><th>Path</th></tr></thead><tbody>{% for log in activity_logs %}<tr><td>{{ log.created_at.strftime('%b %d, %Y %I:%M:%S %p') }}</td><td>{{ log.username }}</td><td><code>{{ log.user_id }}</code></td><td><span class="badge {{ 'text-bg-info' if log.action == 'view' else 'text-bg-warning' if log.action == 'action' else 'text-bg-secondary' }}">{{ log.action|title }}</span></td><td>{{ log.method }}</td><td>{{ log.status_code }}</td><td>{{ log.endpoint }}</td><td><code>{{ log.path }}</code></td></tr>{% else %}<tr><td colspan="8" class="text-center text-muted py-5">No user activity matches these filters.</td></tr>{% endfor %}</tbody></table></div></section>
+</div>
+{% endblock %}

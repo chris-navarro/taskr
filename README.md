@@ -423,6 +423,12 @@ replaces itself and reloads `.env`. This restart is intentional: database
 clients are initialized when the Flask application starts, and changing a live
 connection underneath active requests is unsafe.
 
+The administrator is also logged out as part of this change. Sign in again
+after the restart so the new backend session is created cleanly. Taskr updates
+the current process environment as well as `.env`; this prevents an inherited
+old `DB_BACKEND` environment variable from overriding the newly selected
+backend during the restart.
+
 When running behind Gunicorn, Docker, systemd, or another process manager,
 configure that manager to restart the web process after the storage settings
 change. Process managers own the application lifecycle and should be allowed
@@ -498,6 +504,8 @@ explains why the plan changed.
 | `/journal/export.docx` | Editable document export |
 | `/admin` | Administrator settings |
 | `/admin/audit` | Administrator-only work-log audit trail |
+| `/admin/activity` | Administrator-only user activity report |
+| `/admin/activity.csv` | Administrator-only activity export |
 
 Routes require authentication unless stated otherwise. Task and report data
 is scoped to the signed-in user.
@@ -513,6 +521,12 @@ Taskr keeps current state and historical events separate:
 - A **workspace setting** stores administrator-managed categories.
 - An **audit log** stores administrator-visible snapshots before a work log is
   edited or deleted.
+- A **user activity log** records authenticated views, actions, successful
+  logins, failed login attempts, and logouts for administrator review.
+
+Activity logs intentionally store route, method, result status, timestamp, and
+user identity. They do not store passwords, password hashes in reports, or
+submitted form contents.
 
 This design means a task can show its current state without losing the story
 of how it got there.

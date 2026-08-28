@@ -3,13 +3,16 @@ import sqlite3
 import sys
 import threading
 import time
+import csv
+from io import StringIO
 from functools import wraps
 from datetime import datetime, timedelta
 from urllib.parse import quote, urlsplit, urlunsplit
 
 from dotenv import set_key
-from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, flash, jsonify, redirect, render_template, request, url_for
 from pymongo import MongoClient
+from bson import ObjectId
 from .database import mongo
 from .extensions import bcrypt
 from .models.user import User
@@ -88,6 +91,7 @@ def login():
                 User(document),
                 remember=remember
             )
+            AuditLog.record_activity(document.get("_id", document.get("id", "")), "login", request.endpoint, request.method, 302, request.path)
             flash(
                 f"Welcome back, {document['fullname']}!",
                 "success"
@@ -95,6 +99,7 @@ def login():
             return redirect(
                 url_for("routes.dashboard")
             )
+        AuditLog.record_activity("anonymous", "login_failed", request.endpoint, request.method, 401, request.path)
         flash(
 
             "Invalid username or password.",
@@ -106,6 +111,7 @@ def login():
 @routes.route("/logout")
 @login_required
 def logout():
+    AuditLog.record_activity(current_user.id, "logout", request.endpoint, request.method, 302, request.path)
     logout_user()
     flash(
 
@@ -138,12 +144,109 @@ def dashboard():
 @role_required("Admin", "Administrator")
 def admin():
     settings = storage_settings()
+    users = [
+        {
+            "id": str(document.get("_id", document.get("id", ""))),
+            "username": document.get("username", ""),
+            "fullname": document.get("fullname", ""),
+            "role": document.get("role", "Employee").title(),
+        }
+        for document in mongo.db.users.find().sort("username", 1)
+    ]
     return render_template(
         "admin.html",
         categories=WorkspaceSettings.categories(),
         storage=settings,
         storage_health=storage_health(settings["backend"], settings["mongo_uri"], settings["sqlite_path"]),
+        users=users,
     )
+
+
+@routes.route("/admin/users", methods=["POST"])
+@role_required("Admin", "Administrator")
+def add_user():
+    username = request.form.get("username", "").strip()
+    fullname = request.form.get("fullname", "").strip()
+    password = request.form.get("password", "")
+    role = request.form.get("role", "Employee").title()
+    if not username or not fullname or len(password) < 8:
+        flash("Username, full name, and a password of at least 8 characters are required.", "danger")
+        return redirect(url_for("routes.admin"))
+    if role not in {"Admin", "Administrator", "Manager", "Employee"}:
+        flash("Choose a valid workspace role.", "danger")
+        return redirect(url_for("routes.admin"))
+    if mongo.db.users.find_one({"username": username}):
+        flash("That username is already in use.", "danger")
+        return redirect(url_for("routes.admin"))
+    mongo.db.users.insert_one({
+        "username": username,
+        "fullname": fullname,
+        "password": bcrypt.generate_password_hash(password).decode("utf-8"),
+        "role": role,
+        "created_at": datetime.utcnow(),
+    })
+    flash(f"User {username} added.", "success")
+    return redirect(url_for("routes.admin"))
+
+
+def find_user_document(user_id):
+    query = {"_id": ObjectId(user_id)} if ObjectId.is_valid(user_id) else {"id": user_id}
+    return mongo.db.users.find_one(query)
+
+
+@routes.route("/admin/users/<user_id>/edit", methods=["POST"])
+@role_required("Admin", "Administrator")
+def edit_user(user_id):
+    user = find_user_document(user_id)
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for("routes.admin"))
+    username = request.form.get("username", "").strip()
+    fullname = request.form.get("fullname", "").strip()
+    role = request.form.get("role", "Employee").title()
+    password = request.form.get("password", "")
+    if not username or not fullname or role not in {"Admin", "Administrator", "Manager", "Employee"}:
+        flash("Username, full name, and a valid role are required.", "danger")
+        return redirect(url_for("routes.admin"))
+    if password and len(password) < 8:
+        flash("A replacement password must contain at least 8 characters.", "danger")
+        return redirect(url_for("routes.admin"))
+    user_id_value = str(user.get("_id", user.get("id", "")))
+    existing = mongo.db.users.find_one({"username": username})
+    if existing and str(existing.get("_id", existing.get("id", ""))) != user_id_value:
+        flash("That username is already in use.", "danger")
+        return redirect(url_for("routes.admin"))
+    if user_id_value == str(current_user.id) and role not in {"Admin", "Administrator"}:
+        flash("You cannot remove your own administrator access.", "danger")
+        return redirect(url_for("routes.admin"))
+    values = {"username": username, "fullname": fullname, "role": role}
+    if password:
+        values["password"] = bcrypt.generate_password_hash(password).decode("utf-8")
+    mongo.db.users.update_one({"_id": user.get("_id")} if user.get("_id") else {"id": user.get("id")}, {"$set": values})
+    flash(f"User {username} updated.", "success")
+    return redirect(url_for("routes.admin"))
+
+
+@routes.route("/admin/users/<user_id>/delete", methods=["POST"])
+@role_required("Admin", "Administrator")
+def delete_user(user_id):
+    user = find_user_document(user_id)
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for("routes.admin"))
+    target_id = str(user.get("_id", user.get("id", "")))
+    if target_id == str(current_user.id):
+        flash("You cannot delete your own administrator account.", "danger")
+        return redirect(url_for("routes.admin"))
+    if user.get("role", "").title() in {"Admin", "Administrator"}:
+        admin_count = sum(1 for document in mongo.db.users.find() if document.get("role", "").title() in {"Admin", "Administrator"})
+        if admin_count <= 1:
+            flash("The last administrator account cannot be deleted.", "danger")
+            return redirect(url_for("routes.admin"))
+    query = {"_id": user.get("_id")} if user.get("_id") else {"id": user.get("id")}
+    mongo.db.users.delete_one(query)
+    flash("User deleted.", "success")
+    return redirect(url_for("routes.admin"))
 
 
 @routes.route("/admin/categories", methods=["POST"])
@@ -250,13 +353,17 @@ def update_storage():
         validate_storage(backend, mongo_uri, sqlite_path)
         set_key(env_path, "DB_BACKEND", backend)
         set_key(env_path, "SQLITE_PATH", sqlite_path)
+        os.environ["DB_BACKEND"] = backend
+        os.environ["SQLITE_PATH"] = sqlite_path
         if backend == "mongo":
             set_key(env_path, "MONGO_URI", mongo_uri)
+            os.environ["MONGO_URI"] = mongo_uri
         os.chmod(env_path, 0o600)
     except Exception:
         flash("Storage settings were not saved. Check the backend availability and connection details.", "danger")
         return redirect(url_for("routes.admin"))
-    flash("Storage settings saved. Taskr is restarting to apply the new backend.", "success")
+    logout_user()
+    flash("Storage settings saved. Taskr is restarting. Please sign in again using the selected backend.", "success")
     schedule_restart()
     return redirect(url_for("routes.admin"))
 
@@ -284,6 +391,62 @@ def check_storage():
 @role_required("Admin", "Administrator")
 def audit():
     return render_template("audit.html", audit_logs=AuditLog.recent())
+
+
+@routes.route("/admin/activity")
+@role_required("Admin", "Administrator")
+def activity():
+    start_date = end_date = None
+    try:
+        if request.args.get("start"):
+            start_date = datetime.fromisoformat(request.args["start"])
+        if request.args.get("end"):
+            end_date = datetime.fromisoformat(request.args["end"]).replace(hour=23, minute=59, second=59)
+    except ValueError:
+        start_date = end_date = None
+    users = [
+        {"id": str(document.get("_id", document.get("id", ""))), "username": document.get("username", "")}
+        for document in mongo.db.users.find().sort("username", 1)
+    ]
+    logs = AuditLog.activity(
+        user_id=request.args.get("user_id") or None,
+        action=request.args.get("action") or None,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    usernames = {user["id"]: user["username"] for user in users}
+    for log in logs:
+        log["username"] = usernames.get(log.get("user_id"), "Unknown")
+    return render_template("activity.html", activity_logs=logs, users=users)
+
+
+@routes.route("/admin/activity.csv")
+@role_required("Admin", "Administrator")
+def activity_csv():
+    start_date = end_date = None
+    try:
+        if request.args.get("start"):
+            start_date = datetime.fromisoformat(request.args["start"])
+        if request.args.get("end"):
+            end_date = datetime.fromisoformat(request.args["end"]).replace(hour=23, minute=59, second=59)
+    except ValueError:
+        start_date = end_date = None
+    logs = AuditLog.activity(
+        user_id=request.args.get("user_id") or None,
+        action=request.args.get("action") or None,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["User ID", "Action", "Endpoint", "Method", "Status", "Path", "Recorded"])
+    for log in logs:
+        writer.writerow([
+            log.get("user_id", ""), log.get("action", ""), log.get("endpoint", ""),
+            log.get("method", ""), log.get("status_code", ""), log.get("path", ""),
+            log.get("created_at", "").isoformat() if log.get("created_at") else "",
+        ])
+    return Response(output.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=taskr-user-activity.csv"})
 
 # Testing the mongodb connection
 @routes.route("/test-db")
