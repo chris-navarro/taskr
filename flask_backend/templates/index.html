@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+
+{% block title %}Taskr | Welcome{% endblock %}
+
+{% block content %}
+<div class="landing-page">
+    <div class="landing-content">
+        <a class="brand" href="{{ url_for('routes.index') }}">
+            <span class="brand-mark"><i class="bi bi-check2"></i></span>
+            <span>Taskr</span>
+        </a>
+        <h1>Authorized users can access the Task trackeR application.</h1>
+        <a class="button button-primary" href="{{ url_for('routes.login') }}">
+            Sign in <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+</div>
+{% endblock %}

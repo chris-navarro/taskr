@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+
+{% block title %}Update Audit Trail{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4 journal-page">
+    <div class="d-flex justify-content-between align-items-center mb-4"><div><p class="eyebrow mb-1">Administrator view</p><h1 class="h2">Update audit trail</h1></div><a class="btn btn-outline-secondary" href="{{ url_for('routes.admin') }}">Back to administration</a></div>
+    <section class="card shadow-sm"><div class="table-responsive"><table class="table align-middle mb-0"><thead class="table-light"><tr><th>Action</th><th>Update</th><th>User</th><th>Recorded</th><th>Snapshot</th></tr></thead><tbody>{% for log in audit_logs %}<tr><td><span class="badge {{ 'text-bg-warning' if log.action == 'edited' else 'text-bg-danger' }}">{{ log.action|title }}</span></td><td><code>{{ log.update_id }}</code></td><td><code>{{ log.user_id }}</code></td><td>{{ log.created_at.strftime('%b %d, %Y %I:%M %p') }}</td><td><details><summary>View values</summary><pre class="small mb-0 mt-2">{{ log.snapshot }}</pre></details></td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted py-5">No update changes have been recorded.</td></tr>{% endfor %}</tbody></table></div></section>
+</div>
+{% endblock %}

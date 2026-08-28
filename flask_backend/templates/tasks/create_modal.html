@@ -1,0 +1,451 @@
+<!-- ===================================================== -->
+<!-- CREATE TASK MODAL -->
+<!-- templates/tasks/_create_modal.html -->
+<!-- ===================================================== -->
+
+<div class="modal fade"
+     id="createTaskModal"
+     tabindex="-1"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+
+        <div class="modal-content">
+
+            <!-- ============================================ -->
+            <!-- HEADER -->
+            <!-- ============================================ -->
+
+            <div class="modal-header bg-primary text-white">
+
+                <h4 class="modal-title">
+
+                    <i class="bi bi-kanban-fill"></i>
+
+                    Create New Task
+
+                </h4>
+
+                <button
+                    type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <!-- ============================================ -->
+            <!-- FORM -->
+            <!-- ============================================ -->
+
+            <form
+                action="{{ url_for('tasks.create') }}"
+                method="POST"
+                id="taskForm"
+                novalidate>
+
+                <div class="modal-body task-modal-body">
+
+                    <!-- ==================================== -->
+                    <!-- BASIC -->
+                    <!-- ==================================== -->
+
+                    <div class="row">
+
+                        <div class="col-md-8 mb-3">
+
+                            <label class="form-label">
+
+                                Subject *
+
+                            </label>
+
+                            <input
+
+                                type="text"
+
+                                class="form-control"
+
+                                name="subject"
+
+                                maxlength="150"
+
+                                required>
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label class="form-label">
+
+                                Project ID
+
+                            </label>
+
+                            <input
+
+                                type="text"
+
+                                class="form-control"
+
+                                name="project_id">
+
+                        </div>
+
+                    </div>
+
+                    <!-- ==================================== -->
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label class="form-label">
+
+                                Category
+
+                            </label>
+
+                            <select
+
+                                class="form-select"
+
+                                name="category">
+
+                                {% for category in categories %}
+
+                                <option value="{{ category }}">{{ category }}</option>
+
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label class="form-label">
+
+                                Milestone
+
+                            </label>
+
+                            <input
+
+                                class="form-control"
+
+                                name="milestone">
+
+                        </div>
+
+                    </div>
+
+                    <!-- ==================================== -->
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+
+                            Description
+
+                        </label>
+
+                        <textarea
+
+                            rows="5"
+
+                            class="form-control"
+
+                            id="descriptionEditor"
+                            aria-label="Description editor"></textarea>
+
+                        <input type="hidden" name="description" id="descriptionValue">
+
+                    </div>
+
+                    <!-- ==================================== -->
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-3">
+
+                            <label>
+
+                                Priority
+
+                            </label>
+
+                            <select
+
+                                class="form-select"
+
+                                name="priority">
+
+                                <option>Low</option>
+
+                                <option selected>Medium</option>
+
+                                <option>High</option>
+
+                                <option>Critical</option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label>
+
+                                Status
+
+                            </label>
+
+                            <select
+
+                                class="form-select"
+
+                                name="status">
+
+                                <option selected>
+
+                                    Planning
+
+                                </option>
+
+                                <option>
+
+                                    In Progress
+
+                                </option>
+
+                                <option>
+
+                                    On Hold
+
+                                </option>
+
+                                <option>
+
+                                    Cancelled
+
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label>
+
+                                Estimated Hours
+
+                            </label>
+
+                            <input
+
+                                type="number"
+
+                                class="form-control"
+
+                                value="0"
+
+                                min="0"
+
+                                name="estimated_hours">
+
+                        </div>
+
+                    </div>
+
+                    <!-- ==================================== -->
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label>
+
+                                Start Date
+
+                            </label>
+
+                            <input
+
+                                type="datetime-local"
+
+                                id="startDate"
+                                class="form-control task-date"
+                                name="start_date"
+
+                                required>
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label>
+
+                                Due Date
+
+                            </label>
+
+                            <input
+
+                                type="datetime-local"
+
+                                id="dueDate"
+                                class="form-control task-date"
+                                name="due_date"
+
+                                required>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ==================================== -->
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label>
+
+                                Tags
+
+                            </label>
+
+                            <input
+
+                                class="form-control"
+
+                                placeholder="backend, flask, api"
+
+                                id="tagsInput"
+                                name="tags">
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label>
+
+                                Parent Task
+
+                            </label>
+
+                            <select
+
+                                class="form-select"
+
+                                id="parentTask"
+                                name="parent_task">
+
+                                <option value="">
+
+                                    None
+
+                                </option>
+
+                                {% for task in tasks %}
+
+                                <option value="{{task._id}}">
+
+                                    {{task.subject}}
+
+                                </option>
+
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ==================================== -->
+
+                    <div class="mb-3">
+
+                        <label>
+
+                            Completion Criteria
+
+                        </label>
+
+                        <textarea
+
+                            rows="3"
+
+                            class="form-control"
+
+                            name="completion_criteria"></textarea>
+
+                    </div>
+
+                    <!-- ==================================== -->
+
+                    <div class="mb-3">
+
+                        <label>
+
+                            Remarks
+
+                        </label>
+
+                        <textarea
+
+                            rows="2"
+
+                            class="form-control"
+
+                            id="remarksEditor"
+                            aria-label="Remarks editor"></textarea>
+
+                        <input type="hidden" name="remarks" id="remarksValue">
+
+                    </div>
+
+                </div>
+
+                <!-- ======================================== -->
+                <!-- FOOTER -->
+                <!-- ======================================== -->
+
+                <div class="modal-footer">
+
+                    <button
+
+                        type="button"
+
+                        class="btn btn-secondary"
+
+                        data-bs-dismiss="modal">
+
+                        Cancel
+
+                    </button>
+
+                    <button
+
+                        class="btn btn-primary"
+
+                        type="submit">
+
+                        <i class="bi bi-check-circle"></i>
+
+                        Create Task
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>

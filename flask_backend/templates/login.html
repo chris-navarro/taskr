@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+
+{% block title %}Taskr | Sign in{% endblock %}
+
+{% block content %}
+
+<div class="auth-layout">
+    <section class="auth-intro">
+        <a class="brand" href="{{ url_for('routes.index') }}">
+            <span class="brand-mark"><i class="bi bi-check2"></i></span>
+            <span>Taskr</span>
+        </a>
+        <p class="eyebrow">Workspace access</p>
+        <h1>Make progress visible.</h1>
+        <p class="intro-copy">A calmer way to coordinate work, keep momentum, and see what matters next.</p>
+    </section>
+    <section class="auth-card">
+        <a class="back-link" href="{{ url_for('routes.index') }}"><i class="bi bi-arrow-left"></i> Back to home</a>
+        <div class="auth-heading">
+            <p class="eyebrow">Welcome back</p>
+            <h2>Sign in to Taskr</h2>
+            <p>Use your authorized account to continue.</p>
+        </div>
+        <form method="POST">
+            <div class="form-field">
+                <label class="form-label" for="username">Username</label>
+                <input id="username" type="text" name="username" class="form-control" autocomplete="username" required>
+            </div>
+            <div class="form-field">
+                <label class="form-label" for="password">Password</label>
+                <input id="password" type="password" name="password" class="form-control" autocomplete="current-password" required>
+            </div>
+            <label class="form-check" for="remember">
+                <input class="form-check-input" type="checkbox" name="remember" id="remember">
+                Remember me
+            </label>
+            <button class="button button-primary button-full" type="submit">
+                <i class="bi bi-box-arrow-in-right"></i> Sign in
+            </button>
+        </form>
+    </section>
+</div>
+
+{% endblock %}

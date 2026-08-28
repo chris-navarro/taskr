@@ -1,0 +1,78 @@
+{% extends "layout.html" %}
+
+{% block title %}Taskr | Administration{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <nav class="d-flex justify-content-between align-items-center mb-4 px-2" aria-label="Admin navigation">
+        <a class="text-decoration-none fw-bold" href="{{ url_for('routes.dashboard') }}">
+            <i class="bi bi-arrow-left"></i> Dashboard
+        </a>
+        <a class="button button-secondary" href="{{ url_for('routes.logout') }}">
+            <i class="bi bi-box-arrow-right"></i> Logout
+        </a>
+    </nav>
+
+    <section class="admin-hero p-4 p-md-5 mb-4">
+        <p class="eyebrow">Control center</p>
+        <h1>Administration</h1>
+        <p class="mb-0">Manage workspace access and keep Taskr running smoothly.</p>
+    </section>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body p-4">
+                    <i class="bi bi-people fs-2 text-primary"></i>
+                    <h2 class="h5 mt-3">Users</h2>
+                    <p class="text-muted">Review accounts and workspace roles.</p>
+                    <button class="btn btn-outline-primary" type="button" disabled>Coming soon</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body p-4">
+                    <i class="bi bi-kanban fs-2 text-primary"></i>
+                    <h2 class="h5 mt-3">Task operations</h2>
+                    <p class="text-muted">Open the task workspace and monitor delivery.</p>
+                    <a class="btn btn-primary" href="{{ url_for('tasks.index') }}">Open tasks</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body p-4">
+                    <i class="bi bi-activity fs-2 text-primary"></i>
+                    <h2 class="h5 mt-3">System status</h2>
+                    <p class="text-muted">Your administrator access is active.</p>
+                    <span class="badge text-bg-success">Operational</span>
+                    <a class="btn btn-outline-secondary mt-3" href="{{ url_for('routes.audit') }}"><i class="bi bi-shield-check"></i> View audit trail</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="card shadow-sm mt-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h2 class="h5 mb-1">Task categories</h2>
+                    <p class="text-muted mb-0">Keep categories short and useful for productivity reporting.</p>
+                </div>
+            </div>
+            <form class="row g-2 mb-3" method="POST" action="{{ url_for('routes.add_category') }}">
+                <div class="col-sm-9"><label class="visually-hidden" for="newCategory">Category name</label><input class="form-control" id="newCategory" name="category" maxlength="60" placeholder="e.g. Engagement" required></div>
+                <div class="col-sm-3 d-grid"><button class="btn btn-primary" type="submit"><i class="bi bi-plus-lg"></i> Add category</button></div>
+            </form>
+            <div class="d-flex flex-wrap gap-2">
+                {% for category in categories %}
+                <form method="POST" action="{{ url_for('routes.delete_category', category=category) }}">
+                    <button class="btn btn-sm btn-outline-secondary" type="submit" {% if category in ['Development', 'Research', 'Documentation', 'Testing', 'Deployment', 'Engagement', 'SME', 'NDD Review'] %}disabled{% endif %}>{{ category }}{% if category not in ['Development', 'Research', 'Documentation', 'Testing', 'Deployment', 'Engagement', 'SME', 'NDD Review'] %} <i class="bi bi-x"></i>{% endif %}</button>
+                </form>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+	<div>
+		<p class="eyebrow">Your workspace</p>
+		<h1>{{ current_user.fullname }}</h1>
+	</div>
+	<div class="dashboard-actions">
+		<a class="button button-primary" href="{{ url_for('tasks.index') }}">
+			<i class="bi bi-kanban"></i> Open Tasks
+		</a>
+		<a class="button button-secondary" href="{{ url_for('journal.report') }}">
+			<i class="bi bi-journal-text"></i> Work Journal
+		</a>
+		{% if current_user.has_role('Admin', 'Administrator') %}
+		<a class="button button-secondary" href="{{ url_for('routes.admin') }}">
+			<i class="bi bi-shield-lock"></i> Admin
+		</a>
+		{% endif %}
+		<a class="button button-secondary" href="{{ url_for('routes.logout') }}">
+			<i class="bi bi-box-arrow-right"></i> Logout
+		</a>
+	</div>
+</div>
+
+<div class="dashboard-panel">
+	<div class="status-line"><span class="status-dot"></span> Workspace ready</div>
+	<h2>Tasks and performance tools</h2>
+	<p>Everything you need to keep the team moving will appear here.</p>
+	<div class="role-chip"><i class="bi bi-person-check"></i> {{ current_user.role }} access</div>
+	<a class="dashboard-task-link" href="{{ url_for('tasks.index') }}#createTaskModal">
+		<i class="bi bi-plus-circle"></i> Create or manage tasks
+	</a>
+</div>
+
+<div class="container-fluid mt-4">
+	<div class="row g-3 mb-4">
+		<div class="col-sm-6 col-xl-3">
+			<div class="card shadow-sm h-100"><div class="card-body">
+				<small class="text-muted">Total tasks</small>
+				<h2 class="mb-0">{{ counts.total }}</h2>
+			</div></div>
+		</div>
+		<div class="col-sm-6 col-xl-3">
+			<div class="card shadow-sm h-100"><div class="card-body">
+				<small class="text-muted">Average progress</small>
+				<h2 class="mb-2">{{ counts.average_progress }}%</h2>
+				<div class="progress" role="progressbar" aria-label="Average task progress" aria-valuenow="{{ counts.average_progress }}" aria-valuemin="0" aria-valuemax="100">
+					<div class="progress-bar" style="width: {{ counts.average_progress }}%"></div>
+				</div>
+			</div></div>
+		</div>
+		<div class="col-sm-6 col-xl-3">
+			<div class="card shadow-sm h-100"><div class="card-body">
+				<small class="text-muted">In progress</small>
+				<h2 class="mb-0 text-warning">{{ counts.in_progress }}</h2>
+			</div></div>
+		</div>
+		<div class="col-sm-6 col-xl-3">
+			<div class="card shadow-sm h-100"><div class="card-body">
+				<small class="text-muted">Completed</small>
+				<h2 class="mb-0 text-success">{{ counts.completed }}</h2>
+			</div></div>
+		</div>
+	</div>
+
+	<section class="milestone-watch">
+		<div class="card-header d-flex justify-content-between align-items-center">
+			<strong>Milestone watch</strong>
+			<a href="{{ url_for('tasks.index') }}" class="btn btn-sm btn-outline-primary">View all tasks</a>
+		</div>
+		<div class="row g-3">
+			{% for task in milestones %}
+			<div class="col-md-6 col-xl-4">
+				<a class="card h-100 shadow-sm text-decoration-none milestone-card" href="{{ url_for('tasks.detail', task_id=task._id) }}">
+					<div class="card-body d-flex flex-column">
+						<div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+							<h3 class="h5 text-dark mb-0">{{ task.subject }}</h3>
+							<span class="badge rounded-pill text-bg-{{ task.timeline_color }}">{{ task.timeline_badge }}</span>
+						</div>
+						<p class="small text-muted mb-3">{{ task.milestone|truncate(90, True) }}</p>
+							<p class="small mb-3"><span class="text-muted">Status:</span> <strong class="text-dark">{{ task.status or 'Planning' }}</strong></p>
+						<div class="mt-auto d-flex flex-wrap gap-2">
+							<span class="badge rounded-pill {{ 'text-bg-success' if task.lifecycle_badge == 'Completed' else 'text-bg-danger' if task.lifecycle_badge == 'Cancelled' else 'text-bg-info' if task.lifecycle_badge == 'Updated' else 'text-bg-primary' }}">{{ task.lifecycle_badge }}</span>
+							<span class="badge rounded-pill text-bg-light">{{ task.progress or 0 }}% progress</span>
+						</div>
+					</div>
+				</a>
+			</div>
+			{% else %}
+			<div class="col-12"><div class="p-4 text-muted milestone-empty">Add a short milestone to a task to track it here.</div></div>
+			{% endfor %}
+		</div>
+	</section>
+</div>
+{% endblock %}

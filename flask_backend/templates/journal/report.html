@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+
+{% block title %}Work Journal{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4 journal-page">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+        <div><p class="eyebrow mb-1">Historical work log</p><h1 class="h2">Work Journal</h1><p class="text-muted mb-0">{{ report.period_label }}</p></div>
+        <div class="d-flex gap-2"><a class="btn btn-outline-primary" href="{{ url_for('journal.gantt') }}"><i class="bi bi-bar-chart-steps"></i> Progress history</a><a class="btn btn-outline-secondary" href="{{ url_for('journal.export_pdf', period=report.period, category=report.filters.category, status=report.filters.status, project=report.filters.project) }}"><i class="bi bi-filetype-pdf"></i> PDF</a><a class="btn btn-outline-secondary" href="{{ url_for('journal.export_docx', period=report.period, category=report.filters.category, status=report.filters.status, project=report.filters.project) }}"><i class="bi bi-filetype-docx"></i> DOCX</a><a class="btn btn-primary" href="{{ url_for('tasks.index') }}">Tasks</a></div>
+    </div>
+    <div class="btn-group mb-4" role="group" aria-label="Report period">
+        {% for value, label in [('weekly', 'Weekly'), ('monthly', 'Monthly'), ('mid-year', 'Mid-year'), ('year-end', 'Year-end')] %}
+        <a class="btn btn-outline-secondary {% if report.period == value %}active{% endif %}" href="{{ url_for('journal.report', period=value) }}">{{ label }}</a>
+        {% endfor %}
+    </div>
+    <form class="row g-2 align-items-end mb-4" method="GET">
+        <input type="hidden" name="period" value="custom">
+        <div class="col-sm-4"><label class="form-label" for="reportStart">From</label><input class="form-control" id="reportStart" type="date" name="start" required></div>
+        <div class="col-sm-4"><label class="form-label" for="reportEnd">To</label><input class="form-control" id="reportEnd" type="date" name="end" required></div>
+        <div class="col-sm-4 d-flex gap-2"><button class="btn btn-outline-primary" type="submit">Apply range</button><a class="btn btn-outline-secondary" href="{{ url_for('journal.export_csv', period=report.period, start=request.args.get('start'), end=request.args.get('end'), category=report.filters.category, status=report.filters.status, project=report.filters.project) }}"><i class="bi bi-download"></i> CSV</a></div>
+    </form>
+    <form class="row g-2 align-items-end mb-4" method="GET">
+        <input type="hidden" name="period" value="{{ report.period }}"><input type="hidden" name="start" value="{{ request.args.get('start', '') }}"><input type="hidden" name="end" value="{{ request.args.get('end', '') }}">
+        {% for name, label, values in [('category', 'Category', filters.categories), ('status', 'Status', filters.statuses), ('project', 'Project', filters.projects)] %}<div class="col-md-4"><label class="form-label" for="filter{{ name }}">{{ label }}</label><select class="form-select" id="filter{{ name }}" name="{{ name }}"><option value="">All</option>{% for value in values %}<option value="{{ value }}" {% if report.filters[name] == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></div>{% endfor %}
+        <div class="col-12"><button class="btn btn-outline-primary" type="submit">Apply filters</button></div>
+    </form>
+    <div class="row g-3 mb-4">
+        {% for label, value in [('Updates', report.stats.updates), ('Hours logged', '%.2f'|format(report.stats.hours)), ('Accomplishments', report.stats.accomplishments), ('Completed updates', report.stats.completed)] %}
+        <div class="col-sm-6 col-xl-3"><div class="card journal-stat-card h-100 shadow-sm"><div class="card-body"><small class="text-muted">{{ label }}</small><div class="display-6 fw-semibold">{{ value }}</div></div></div></div>
+        {% endfor %}
+    </div>
+    <div class="row g-3 mb-4"><div class="col-lg-4"><div class="card shadow-sm h-100"><div class="card-body"><h2 class="h6">Planned versus actual</h2><div class="planned-actual-row"><span>Planned</span><strong>{{ '%.2f'|format(report.stats.planned_hours) }}h</strong></div><div class="planned-actual-bar"><span class="planned" data-width="{{ report.stats.planned_hours }}"></span></div><div class="planned-actual-row mt-3"><span>Actual</span><strong>{{ '%.2f'|format(report.stats.actual_hours) }}h</strong></div><div class="planned-actual-bar"><span class="actual" data-width="{{ report.stats.actual_hours }}"></span></div></div></div></div><div class="col-lg-4"><div class="card shadow-sm h-100"><div class="card-body"><h2 class="h6">Productivity scorecard</h2><div class="row text-center"><div class="col-6"><strong class="h4">{{ report.scorecards.completion_rate }}%</strong><small class="d-block text-muted">Completion</small></div><div class="col-6"><strong class="h4">{{ report.scorecards.accomplishment_rate }}%</strong><small class="d-block text-muted">Accomplishment rate</small></div><div class="col-6 mt-3"><strong class="h4">{{ report.scorecards.planned_utilization }}%</strong><small class="d-block text-muted">Planned hours used</small></div><div class="col-6 mt-3"><strong class="h4">{{ report.scorecards.active_days }}</strong><small class="d-block text-muted">Active days</small></div></div></div></div></div><div class="col-lg-4"><div class="card shadow-sm h-100"><div class="card-body"><h2 class="h6">Compared with previous period</h2><div class="d-flex justify-content-around text-center mt-3"><div><strong class="h4">{{ '%+d'|format(report.comparison.updates) }}</strong><small class="d-block text-muted">Updates</small></div><div><strong class="h4">{{ '%+.2f'|format(report.comparison.hours) }}h</strong><small class="d-block text-muted">Hours</small></div></div></div></div></div></div>
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <section class="card shadow-sm"><div class="card-header"><strong>Accomplishment entries</strong></div><div class="card-body">
+                {% for entry in report.entries %}
+                <article class="journal-entry pb-3 mb-3 border-bottom">
+                    <div class="d-flex justify-content-between gap-3"><a class="h5 mb-1" href="{{ url_for('tasks.detail', task_id=entry.task._id) }}">{{ entry.task.subject }}</a><span class="badge text-bg-light">{{ entry.task.category or 'Uncategorised' }}</span></div>
+                    {% for update in entry.updates %}<div class="journal-update mt-3"><div class="small text-muted">{{ update.worked_at.strftime('%b %d, %Y') }} · {{ update.hours_worked or 0 }} hours · {{ update.progress or 0 }}%</div>{% if update.accomplishment %}<p class="mb-1 mt-1">{{ update.accomplishment }}</p>{% endif %}{% if update.blockers %}<p class="small text-danger mb-1"><strong>Blocker:</strong> {{ update.blockers }}</p>{% endif %}{% if update.next_steps %}<p class="small text-muted mb-0"><strong>Next:</strong> {{ update.next_steps }}</p>{% endif %}</div>{% endfor %}
+                </article>
+                {% else %}<p class="text-muted mb-0">No work updates were recorded during this period.</p>{% endfor %}
+            </div></section>
+        </div>
+        <div class="col-lg-4"><section class="card shadow-sm mb-4"><div class="card-header"><strong>Hours by day</strong></div><div class="card-body">{% for label, value in report.daily_hours %}<div class="analytics-row"><div class="d-flex justify-content-between small"><span>{{ label }}</span><strong>{{ '%.2f'|format(value) }}h</strong></div><div class="analytics-bar"><span data-width="{{ value }}"></span></div></div>{% else %}<span class="text-muted">No hours data</span>{% endfor %}</div></section><section class="card shadow-sm mb-4"><div class="card-header"><strong>By status</strong></div><div class="card-body">{% for label, value in report.status_counts %}<div class="d-flex justify-content-between mb-2"><span>{{ label }}</span><strong>{{ value }}</strong></div>{% else %}<span class="text-muted">No status data</span>{% endfor %}</div></section><section class="card shadow-sm"><div class="card-header"><strong>By category</strong></div><div class="card-body">{% for label, value in report.category_counts %}<div class="d-flex justify-content-between mb-2"><span>{{ label }}</span><strong>{{ value }}</strong></div>{% else %}<span class="text-muted">No category data</span>{% endfor %}</div></section></div>
+    </div>
+</div>
+{% endblock %}

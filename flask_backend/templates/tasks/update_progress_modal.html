@@ -1,0 +1,82 @@
+<div class="modal fade" id="updateProgressModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <p class="eyebrow mb-1">Work log</p>
+                    <h2 class="modal-title h4 mb-0">Update progress</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('tasks.add_update', task_id=task._id) }}" method="POST">
+                <div class="modal-body task-modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="dateWorked">Date worked</label>
+                            <input class="form-control" id="dateWorked" type="datetime-local" name="date_worked" step="60" required>
+                            <small class="form-text text-muted">Use the date and time when the work happened. Past dates are allowed.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="hoursWorked">Hours worked</label>
+                            <input class="form-control" id="hoursWorked" type="number" name="hours_worked" min="0" step="0.25" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="estimatedHours">Estimated hours</label>
+                            <input class="form-control" id="estimatedHours" type="number" name="estimated_hours" min="0" step="0.25" value="{{ task.estimated_hours or 0 }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="updateStartDate">Start date</label>
+                            <input class="form-control" id="updateStartDate" type="datetime-local" name="update_start_date" value="{{ task.start_date.strftime('%Y-%m-%dT%H:%M') if task.start_date else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="updateDueDate">Due date</label>
+                            <input class="form-control" id="updateDueDate" type="datetime-local" name="update_due_date" value="{{ task.due_date.strftime('%Y-%m-%dT%H:%M') if task.due_date else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="progressValue">Progress</label>
+                            <input class="form-control" id="progressValue" type="number" name="progress" min="0" max="100" value="{{ task.progress or 0 }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="updateStatus">Status</label>
+                            <select class="form-select" id="updateStatus" name="status">
+                                <option {% if task.status == "Planning" %}selected{% endif %}>Planning</option>
+                                <option {% if task.status == "In Progress" or not task.status %}selected{% endif %}>In Progress</option>
+                                <option {% if task.status == "On Hold" %}selected{% endif %}>On Hold</option>
+                                <option {% if task.status == "Completed" %}selected{% endif %}>Completed</option>
+                                <option {% if task.status in ["Cancelled", "Canceled"] %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="accomplishments">Accomplishments</label>
+                            <textarea class="form-control" id="accomplishments" name="accomplishments" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="challenges">Challenges / Blockers</label>
+                            <textarea class="form-control" id="challenges" name="challenges" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="nextSteps">Next steps</label>
+                            <textarea class="form-control" id="nextSteps" name="next_steps" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="updateRemarks">Remarks</label>
+                            <textarea class="form-control" id="updateRemarks" name="remarks" rows="2"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="dateChangeReason">Date change justification</label>
+                            <textarea class="form-control" id="dateChangeReason" name="date_change_reason" rows="2" placeholder="Required when changing the task dates"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="attachments">Attachments</label>
+                            <input class="form-control" id="attachments" type="text" name="attachments" placeholder="File names or links">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle"></i> Save work log</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

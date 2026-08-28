@@ -1,0 +1,488 @@
+{% extends "layout.html" %}
+
+{% block title %}
+{{ task.subject }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid mt-4">
+
+    <!-- ========================= -->
+    <!-- Header -->
+    <!-- ========================= -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h2 class="fw-bold">
+
+                <i class="bi bi-kanban-fill text-primary"></i>
+
+                {{ task.subject }}
+
+            </h2>
+
+            <small class="text-muted">
+
+                Project:
+
+                {{ task.project_id or "Unassigned" }}
+
+            </small>
+
+        </div>
+
+        <div>
+
+            <a
+                href="{{ url_for('tasks.index') }}"
+                class="btn btn-secondary">
+
+                <i class="bi bi-arrow-left"></i>
+
+                Back
+
+            </a>
+
+        </div>
+
+    </div>
+
+    <!-- ========================= -->
+    <!-- Summary -->
+    <!-- ========================= -->
+
+    <div class="row">
+
+        <div class="col-lg-8">
+
+            <div class="card shadow-sm mb-4">
+
+                <div class="card-header">
+
+                    <strong>
+
+                        Task Information
+
+                    </strong>
+
+                </div>
+
+                <div class="card-body">
+
+                    <table class="table">
+
+                        <tr>
+
+                            <th width="220">
+
+                                Subject
+
+                            </th>
+
+                            <td>
+
+                                {{ task.subject }}
+
+                            </td>
+
+                        </tr>
+
+                        <tr>
+
+                            <th>
+
+                                Category
+
+                            </th>
+
+                            <td>
+
+                                {{ task.category }}
+
+                            </td>
+
+                        </tr>
+
+                        <tr>
+
+                            <th>
+
+                                Priority
+
+                            </th>
+
+                            <td>
+
+                                {{ task.priority }}
+
+                            </td>
+
+                        </tr>
+
+                        <tr>
+
+                            <th>
+
+                                Status
+
+                            </th>
+
+                            <td>
+
+                                {{ task.status or "Planning" }}
+
+                                <span class="badge rounded-pill ms-2 {{ 'text-bg-success' if task.status == 'Completed' else 'text-bg-danger' if task.status in ['Cancelled', 'Canceled'] else 'text-bg-info' }}">{{ task.lifecycle_badge }}</span>
+
+                            </td>
+
+                        </tr>
+
+                        <tr>
+
+                            <th>
+
+                                Estimated Hours
+
+                            </th>
+
+                            <td>
+
+                                {{ task.estimated_hours }}
+
+                            </td>
+
+                        </tr>
+
+                        <tr>
+
+                            <th>
+
+                                Actual Hours
+
+                            </th>
+
+                            <td>
+
+                                {{ task.actual_hours }}
+
+                            </td>
+
+                        </tr>
+
+                        <tr>
+
+                            <th>
+
+                                Start Date
+
+                            </th>
+
+                            <td>
+
+                                {{ task.start_date.strftime("%B %d, %Y %I:%M %p") }}
+
+                            </td>
+
+                        </tr>
+
+                        <tr>
+
+                            <th>
+
+                                Due Date
+
+                            </th>
+
+                            <td>
+
+                                {{ task.due_date.strftime("%B %d, %Y %I:%M %p") }}
+
+                            </td>
+
+                        </tr>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+            <!-- Description -->
+
+            <div class="card shadow-sm mb-4">
+
+                <div class="card-header">
+
+                    Description
+
+                </div>
+
+                <div class="card-body">
+
+                    {{ task.description }}
+
+                </div>
+
+            </div>
+
+            <!-- Completion Criteria -->
+
+            <div class="card shadow-sm mb-4">
+
+                <div class="card-header">
+
+                    Completion Criteria
+
+                </div>
+
+                <div class="card-body">
+
+                    {{ task.completion_criteria }}
+
+                </div>
+
+            </div>
+
+            <!-- Placeholder -->
+
+            <div class="card shadow-sm">
+
+                <div class="card-header">
+
+                    Activity Timeline
+
+                </div>
+
+                <div class="card-body">
+
+                    {% if updates %}
+                    <div class="timeline-list">
+                        {% for update in updates %}
+                        <article class="timeline-item py-3 border-bottom">
+                            <div class="timeline-marker" aria-hidden="true"></div>
+                            <div class="d-flex justify-content-between align-items-start gap-3">
+                                <div>
+                                    <strong>{{ update.worked_at.strftime("%b %d, %Y") if update.worked_at else "Date not recorded" }}</strong>
+                                    {% if update.worked_at %}<div class="small text-muted">{{ update.worked_at.strftime("%I:%M %p") }}</div>{% endif %}
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge rounded-pill {{ 'text-bg-success' if update.status == 'Completed' else 'text-bg-danger' if update.status in ['Cancelled', 'Canceled'] else 'text-bg-info' }}">{{ update.status or 'Updated' }}</span>
+                                    {% if update.user_id|string == current_user.id|string %}
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#editUpdate{{ update._id }}" aria-label="Edit update"><i class="bi bi-pencil"></i></button>
+                                    <form method="POST" action="{{ url_for('task_updates.delete', task_id=task._id, update_id=update._id) }}" onsubmit="return confirm('Delete this work log?');"><button class="btn btn-sm btn-outline-danger" type="submit" aria-label="Delete update"><i class="bi bi-trash"></i></button></form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                <span class="badge text-bg-primary">{{ update.progress or 0 }}% Progress</span>
+                                <span class="badge text-bg-light">{{ update.hours_worked or 0 }} Hours</span>
+                            </div>
+                            {% if update.accomplishment %}<div class="timeline-detail"><strong>Accomplishment</strong><p>{{ update.accomplishment }}</p></div>{% endif %}
+                            {% if update.blockers %}<div class="timeline-detail"><strong>Blocker</strong><p>{{ update.blockers }}</p></div>{% endif %}
+                            {% if update.next_steps %}<div class="timeline-detail"><strong>Next Steps</strong><p>{{ update.next_steps }}</p></div>{% endif %}
+                            {% if update.remarks %}<div class="timeline-detail"><strong>Remarks</strong><p>{{ update.remarks }}</p></div>{% endif %}
+                        </article>
+                        <div class="modal fade" id="editUpdate{{ update._id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
+                                <div class="modal-header"><h2 class="modal-title h5">Edit work log</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                                <form method="POST" action="{{ url_for('task_updates.edit', task_id=task._id, update_id=update._id) }}">
+                                    <div class="modal-body task-modal-body"><div class="row g-3">
+                                        <div class="col-md-6"><label class="form-label" for="workedAt{{ update._id }}">Date worked</label><input class="form-control" id="workedAt{{ update._id }}" type="datetime-local" name="worked_at" value="{{ update.worked_at.strftime('%Y-%m-%dT%H:%M') if update.worked_at else '' }}" required></div>
+                                        <div class="col-md-3"><label class="form-label" for="progress{{ update._id }}">Progress</label><input class="form-control" id="progress{{ update._id }}" type="number" name="progress" min="0" max="100" value="{{ update.progress or 0 }}" required></div>
+                                        <div class="col-md-3"><label class="form-label" for="hours{{ update._id }}">Hours</label><input class="form-control" id="hours{{ update._id }}" type="number" name="hours_worked" min="0" step="0.25" value="{{ update.hours_worked or 0 }}" required></div>
+                                        <div class="col-md-6"><label class="form-label" for="status{{ update._id }}">Status</label><select class="form-select" id="status{{ update._id }}" name="status">{% for status in ['Planning', 'In Progress', 'On Hold', 'Completed', 'Cancelled', 'Blocked'] %}<option {% if update.status == status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select></div>
+                                        <div class="col-12"><label class="form-label" for="accomplishment{{ update._id }}">Accomplishment</label><textarea class="form-control" id="accomplishment{{ update._id }}" name="accomplishment" rows="3">{{ update.accomplishment or '' }}</textarea></div>
+                                        <div class="col-md-6"><label class="form-label" for="blockers{{ update._id }}">Blockers</label><textarea class="form-control" id="blockers{{ update._id }}" name="blockers" rows="3">{{ update.blockers or '' }}</textarea></div>
+                                        <div class="col-md-6"><label class="form-label" for="nextSteps{{ update._id }}">Next steps</label><textarea class="form-control" id="nextSteps{{ update._id }}" name="next_steps" rows="3">{{ update.next_steps or '' }}</textarea></div>
+                                        <div class="col-12"><label class="form-label" for="remarks{{ update._id }}">Remarks</label><textarea class="form-control" id="remarks{{ update._id }}" name="remarks" rows="2">{{ update.remarks or '' }}</textarea></div>
+                                    </div></div>
+                                    <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" type="submit"><i class="bi bi-save me-1"></i>Save changes</button></div>
+                                </form>
+                            </div></div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-5">
+
+                        <i class="bi bi-clock-history display-4"></i>
+
+                        <p class="mt-3">
+
+                            No activity has been recorded yet.
+
+                        </p>
+
+                        <p>
+
+                            Activity logs will appear here.
+
+                        </p>
+
+                    </div>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Right Panel -->
+
+        <div class="col-lg-4">
+
+            <!-- Progress -->
+
+            <div class="card shadow-sm mb-4">
+
+                <div class="card-header">
+
+                    Progress
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="progress mb-3"
+                         style="height:25px;">
+
+                        <div
+
+                            class="progress-bar"
+
+                            data-progress="{{ task.progress or 0 }}">
+
+                            {{task.progress or 0}}%
+
+                        </div>
+
+                    </div>
+
+                    <button
+                        class="btn btn-primary w-100"
+                        type="button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#updateProgressModal">
+                        <i class="bi bi-activity me-1"></i>
+                        Update Progress
+                    </button>
+
+                </div>
+
+            </div>
+
+            <!-- Statistics -->
+
+            <div class="card shadow-sm mb-4">
+
+                <div class="card-header">
+
+                    Statistics
+
+                </div>
+
+                <div class="card-body">
+
+                    <table class="table table-borderless">
+
+                        <tr>
+
+                            <td>
+
+                                Created
+
+                            </td>
+
+                            <td>
+
+                                {{ task.created_at.strftime("%b %d, %Y") }}
+
+                            </td>
+
+                        </tr>
+
+                        <tr>
+
+                            <td>
+
+                                Last Updated
+
+                            </td>
+
+                            <td>
+
+                                {{ task.updated_at.strftime("%b %d, %Y") }}
+
+                            </td>
+
+                        </tr>
+
+                        <tr>
+
+                            <td>
+
+                                Milestone
+
+                            </td>
+
+                            <td>{{ task.milestone or "No milestone" }}</td>
+
+                        </tr>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+            <!-- Tags -->
+
+            <div class="card shadow-sm">
+
+                <div class="card-header">
+
+                    Tags
+
+                </div>
+
+                <div class="card-body">
+
+                    {% if task.tags %}
+
+                        {% for tag in task.tags %}
+
+                        <span class="badge bg-primary">
+
+                            {{ tag }}
+
+                        </span>
+
+                        {% endfor %}
+
+                    {% else %}
+
+                        <span class="text-muted">
+
+                            No Tags
+
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% include "tasks/update_progress_modal.html" %}
+
+{% endblock %}

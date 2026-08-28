@@ -1,0 +1,536 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Task Management
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid mt-4">
+
+    <nav class="d-flex justify-content-between align-items-center mb-4 px-2" aria-label="Task navigation">
+        <a class="text-decoration-none fw-bold" href="{{ url_for('routes.dashboard') }}">
+            <i class="bi bi-arrow-left"></i> Dashboard
+        </a>
+        <span class="text-muted small">{{ current_user.fullname }}'s workspace</span>
+    </nav>
+
+    <!-- ====================================================== -->
+    <!-- PAGE HEADER -->
+    <!-- ====================================================== -->
+
+    <div class="row mb-4">
+
+        <div class="col-md-6">
+
+            <h2 class="fw-bold">
+
+                <i class="bi bi-kanban-fill text-primary"></i>
+
+                Task Management
+
+            </h2>
+
+            <p class="text-muted">
+
+                Manage and monitor all your tasks.
+
+            </p>
+
+        </div>
+
+        <div class="col-md-6 text-md-end">
+
+            <button
+                class="btn btn-primary"
+
+                data-bs-toggle="modal"
+
+                data-bs-target="#createTaskModal">
+
+                <i class="bi bi-plus-circle"></i>
+
+                Create task
+
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- ====================================================== -->
+    <!-- SUMMARY CARDS -->
+    <!-- ====================================================== -->
+
+    <div class="row mb-4">
+
+        <div class="col-lg-3">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body">
+
+                    <h6>Total Tasks</h6>
+
+                    <h2>
+
+                        {{ counts.total }}
+
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-lg-3">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body">
+
+                    <h6>Planning</h6>
+
+                    <h2 class="text-secondary">
+
+                        {{ counts.planning }}
+
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-lg-3">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body">
+
+                    <h6>In Progress</h6>
+
+                    <h2 class="text-warning">
+
+                        {{ counts.in_progress }}
+
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-lg-3">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body">
+
+                    <h6>Completed</h6>
+
+                    <h2 class="text-success">
+
+                        {{ counts.completed }}
+
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ====================================================== -->
+    <!-- SEARCH -->
+    <!-- ====================================================== -->
+
+    <div class="card shadow-sm mb-3">
+
+        <div class="card-body">
+
+            <form
+                method="GET">
+
+                <div class="row">
+
+                    <div class="col-md-10">
+
+                        <input
+
+                            class="form-control"
+
+                            name="q"
+
+                            value="{{ keyword }}"
+
+                            placeholder="Search subject...">
+
+                    </div>
+
+                    <div class="col-md-2 d-grid">
+
+                        <button
+                            class="btn btn-outline-primary">
+
+                            <i class="bi bi-search"></i>
+
+                            Search
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- ====================================================== -->
+    <!-- TASK TABLE -->
+    <!-- ====================================================== -->
+
+    <div class="card shadow">
+
+        <div class="table-responsive">
+
+                            <table
+                                class="table table-hover align-middle"
+                                id="taskTable">
+
+                <thead class="table-light">
+
+                    <tr>
+
+                        <th>Subject</th>
+
+                        <th>Project</th>
+
+                        <th>Status</th>
+
+                        <th>Priority</th>
+
+                        <th>Progress</th>
+
+                        <th>Due Date</th>
+
+                        <th width="160">
+
+                            Actions
+
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="taskTableBody">
+
+                    {% if tasks %}
+
+                        {% for task in tasks %}
+
+                        <tr>
+
+                            <td>
+
+                                <strong>
+
+                                    {{ task.subject }}
+
+                                </strong>
+
+                            </td>
+
+                            <td>
+
+                                {{ task.project_id or '-' }}
+
+                            </td>
+
+                            <td>
+
+                                {% if task.status == "Planning" or not task.status %}
+
+                                    <span class="badge bg-secondary">
+
+                                        Planning
+
+                                    </span>
+
+                                {% elif task.status=="In Progress" %}
+
+                                    <span class="badge bg-warning">
+
+                                        In Progress
+
+                                    </span>
+
+                                {% elif task.status=="Completed" %}
+
+                                    <span class="badge bg-success">
+
+                                        Completed
+
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-danger">
+
+                                        {{ task.status or "Planning" }}
+
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+
+                                {% if task.priority=="Critical" %}
+
+                                    <span class="badge bg-danger">
+
+                                        Critical
+
+                                    </span>
+
+                                {% elif task.priority=="High" %}
+
+                                    <span class="badge bg-warning">
+
+                                        High
+
+                                    </span>
+
+                                {% elif task.priority=="Medium" %}
+
+                                    <span class="badge bg-primary">
+
+                                        Medium
+
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-secondary">
+
+                                        Low
+
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td width="180">
+
+                                <div class="progress task-progress">
+
+                                    <div
+
+                                        class="progress-bar progress-bar-striped"
+
+                                        role="progressbar"
+
+                                        data-progress="{{ task.progress or 0 }}">
+
+                                        {{task.progress or 0}}%
+
+                                    </div>
+
+                                </div>
+
+                            </td>
+
+                            <td>
+
+                                {{ task.due_date.strftime("%b %d, %Y") if task.due_date else '-' }}
+
+                            </td>
+
+                            <td>
+
+                                <a
+
+                                    class="btn btn-sm btn-primary"
+
+                                    href="{{ url_for('tasks.detail',
+                                    task_id=task._id) }}">
+
+                                    <i class="bi bi-eye"></i>
+
+                                </a>
+
+                                <button
+                                    class="btn btn-sm btn-warning"
+                                    type="button"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editTaskModal{{ task._id }}"
+                                    aria-label="Edit {{ task.subject }}">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+
+                                <button
+
+                                    class="btn btn-danger btn-delete"
+                                    data-id="{{task._id}}"
+                                    data-subject="{{task.subject}}">
+                                    <i class="bi bi-trash"></i>
+
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                        <div class="modal fade" id="editTaskModal{{ task._id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Edit task</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <form action="{{ url_for('tasks.edit', task_id=task._id) }}" method="POST">
+                                        <div class="modal-body task-modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label" for="subject{{ task._id }}">Subject</label>
+                                                <input class="form-control" id="subject{{ task._id }}" name="subject" maxlength="150" value="{{ task.subject }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label" for="project{{ task._id }}">Project</label>
+                                                <input class="form-control" id="project{{ task._id }}" name="project_id" value="{{ task.project_id or '' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label" for="description{{ task._id }}">Description</label>
+                                                <textarea class="form-control" id="description{{ task._id }}" name="description" rows="5">{{ task.description or '' }}</textarea>
+                                            </div>
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label" for="category{{ task._id }}">Category</label>
+                                                    <select class="form-select" id="category{{ task._id }}" name="category">
+                                                        {% for category in categories %}
+                                                        <option {% if task.category == category %}selected{% endif %}>{{ category }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label" for="milestone{{ task._id }}">Milestone</label>
+                                                    <input class="form-control" id="milestone{{ task._id }}" name="milestone" maxlength="120" value="{{ task.milestone or '' }}">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label" for="priority{{ task._id }}">Priority</label>
+                                                    <select class="form-select" id="priority{{ task._id }}" name="priority">
+                                                        {% for priority in ['Low', 'Medium', 'High', 'Critical'] %}
+                                                        <option {% if task.priority == priority %}selected{% endif %}>{{ priority }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label" for="status{{ task._id }}">Status</label>
+                                                    <select class="form-select" id="status{{ task._id }}" name="status">
+                                                        {% for status in ['Planning', 'In Progress', 'On Hold', 'Completed', 'Cancelled'] %}
+                                                        <option {% if task.status == status %}selected{% endif %}>{{ status }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+                                            <button class="btn btn-primary" type="submit"><i class="bi bi-check2"></i> Save changes</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% endfor %}
+
+                    {% else %}
+
+                    <tr>
+
+                        <td
+                            colspan="7"
+                            class="text-center py-5">
+
+                            <h5>
+
+                                No Tasks Found
+
+                            </h5>
+
+                            <p>
+
+                                Click
+
+                                <strong>
+
+                                New Task
+
+                                </strong>
+
+                                to create one.
+
+                            </p>
+
+                        </td>
+
+                    </tr>
+
+                    {% endif %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <!-- ====================================================== -->
+    <!-- PAGINATION -->
+    <!-- ====================================================== -->
+
+    <nav class="mt-4">
+
+        <ul class="pagination justify-content-center">
+
+            {% for p in range(1,total_pages+1) %}
+
+                <li
+                    class="page-item {% if p==page %}active{% endif %}">
+
+                    <a
+
+                        class="page-link"
+
+                        href="?page={{p}}&q={{keyword}}">
+
+                        {{p}}
+
+                    </a>
+
+                </li>
+
+            {% endfor %}
+
+        </ul>
+
+    </nav>
+
+</div>
+
+{% include "tasks/create_modal.html" %}
+
+{% endblock %}
