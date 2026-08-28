@@ -9,4 +9,8 @@ venv
 # ignore Python cache files
 __pycache__/
 
+# local SQLite fallback database
+*.sqlite3
+*.sqlite3-journal
+
 

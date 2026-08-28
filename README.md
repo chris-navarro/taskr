@@ -142,7 +142,7 @@ tasks. Audit records are restricted to administrators.
 ### What You Need
 
 - Python 3.10 or newer
-- MongoDB running locally or an accessible MongoDB deployment
+- MongoDB running locally or an accessible MongoDB deployment, **or SQLite3**
 - A modern web browser
 
 ### 1. Get the Project
@@ -182,10 +182,11 @@ DOCX export.
 
 ### 4. Configure the Environment
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root. The default backend is MongoDB:
 
 ```dotenv
 SECRET_KEY=replace-this-with-a-long-random-secret
+DB_BACKEND=mongo
 MONGO_URI=mongodb://localhost:27017/taskr
 ```
 
@@ -193,15 +194,176 @@ The application defaults to the local MongoDB URI shown above, but setting it
 explicitly makes the deployment easier to understand. Never commit real
 secrets to source control.
 
-### 5. Start MongoDB
+### SQLite3 Fallback
 
-Make sure MongoDB is running before starting Taskr. The application stores
-users, tasks, work logs, workspace categories, and audit records in MongoDB.
+MongoDB is the normal production-oriented backend, but Taskr can run without a
+MongoDB server. SQLite3 is built into Python, so it is a convenient fallback
+for local development, training, demos, small personal deployments, or
+environments where installing MongoDB is not practical.
+
+Change your `.env` file to:
+
+```dotenv
+SECRET_KEY=replace-this-with-a-long-random-secret
+DB_BACKEND=sqlite
+SQLITE_PATH=taskr.sqlite3
+```
+
+Then start Taskr normally:
+
+```bash
+python app.py
+```
+
+Taskr creates the SQLite file automatically on first use. The fallback stores
+users, tasks, work logs, categories, and audit records in a local SQLite
+database. The file is ignored by Git through `.gitignore`.
+
+SQLite mode keeps the same application screens and workflows: login, tasks,
+historical updates, reports, exports, progress history, categories, and the
+administrator audit trail. No separate SQLite server is required.
+
+### Validate the SQLite Database
+
+Taskr's SQLite fallback uses a document-style table rather than separate
+relational tables. Each record is stored in `documents`, identified by its
+`collection`, with application fields inside the JSON `body` column.
+
+Before inspecting or copying the database, stop Taskr and make a backup:
+
+```bash
+cp taskr.sqlite3 taskr.sqlite3.backup
+```
+
+If the SQLite command-line program is installed, open the database:
+
+```bash
+sqlite3 taskr.sqlite3
+```
+
+Then run these read-only checks:
+
+```sql
+-- Database integrity: expected result is `ok`.
+PRAGMA integrity_check;
+
+-- Confirm the Taskr storage table exists.
+.tables
+SELECT name, sql
+FROM sqlite_master
+WHERE type = 'table';
+
+-- Count records in every Taskr collection.
+SELECT collection, COUNT(*) AS records
+FROM documents
+GROUP BY collection
+ORDER BY collection;
+
+-- List users without exposing password hashes.
+SELECT id,
+     json_extract(body, '$.username') AS username,
+     json_extract(body, '$.fullname') AS fullname,
+     json_extract(body, '$.role') AS role
+FROM documents
+WHERE collection = 'users';
+
+-- Review tasks and their current state.
+SELECT id,
+     json_extract(body, '$.subject') AS subject,
+     json_extract(body, '$.status') AS status,
+     json_extract(body, '$.progress') AS progress,
+     json_extract(body, '$.estimated_hours') AS estimated_hours,
+     json_extract(body, '$.actual_hours') AS actual_hours,
+     json_extract(body, '$.created_at.value') AS created_at
+FROM documents
+WHERE collection = 'tasks'
+ORDER BY created_at DESC;
+
+-- Review historical work logs.
+SELECT id,
+     json_extract(body, '$.task_id.value') AS task_id,
+     json_extract(body, '$.worked_at.value') AS worked_at,
+     json_extract(body, '$.progress') AS progress,
+     json_extract(body, '$.hours_worked') AS hours,
+     json_extract(body, '$.status') AS status
+FROM documents
+WHERE collection = 'task_updates'
+ORDER BY worked_at DESC;
+
+-- Total recorded hours.
+SELECT ROUND(SUM(CAST(json_extract(body, '$.hours_worked') AS REAL)), 2) AS total_hours
+FROM documents
+WHERE collection = 'task_updates';
+
+-- Check audit entries.
+SELECT id,
+     json_extract(body, '$.action') AS action,
+     json_extract(body, '$.update_id') AS update_id,
+     json_extract(body, '$.created_at.value') AS recorded_at
+FROM documents
+WHERE collection = 'task_update_audit'
+ORDER BY recorded_at DESC;
+```
+
+Exit the SQLite shell with `.quit` or `Ctrl+D`.
+
+If the `sqlite3` command is not installed, use Python, which is already part of
+the Taskr runtime:
+
+```bash
+venv/bin/python - <<'PY'
+import sqlite3
+
+connection = sqlite3.connect("taskr.sqlite3")
+print(connection.execute("PRAGMA integrity_check").fetchone()[0])
+print(connection.execute("""
+  SELECT collection, COUNT(*)
+  FROM documents
+  GROUP BY collection
+  ORDER BY collection
+""").fetchall())
+connection.close()
+PY
+```
+
+Useful interpretations:
+
+- `ok` from `PRAGMA integrity_check` means the file passes SQLite's integrity check.
+- A `users` count greater than zero means an account exists in this SQLite file.
+- A `tasks` count of zero means the account has no stored tasks in this backend.
+- A `task_updates` count of zero means no historical work has been recorded.
+- A missing collection is normal until that feature stores its first record.
+- Password hashes should never be printed, copied into reports, or committed.
+
+MongoDB and SQLite are alternative backends, not synchronized replicas. A
+database created in one mode will not automatically appear in the other mode.
+If you switch modes, either start with a fresh database or create a dedicated
+data migration before expecting existing records to appear.
+
+To create the local administrator while SQLite mode is enabled, run:
+
+```bash
+DB_BACKEND=sqlite SQLITE_PATH=taskr.sqlite3 python create_admin.py
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:DB_BACKEND="sqlite"
+$env:SQLITE_PATH="taskr.sqlite3"
+python create_admin.py
+```
+
+### 5. Start MongoDB (MongoDB mode only)
+
+If `DB_BACKEND=mongo`, make sure MongoDB is running before starting Taskr. The
+application stores users, tasks, work logs, workspace categories, and audit
+records in MongoDB. Skip this step when using `DB_BACKEND=sqlite`.
 
 ### 6. Create an Administrator
 
 The development helper creates an administrator account using the configured
-local MongoDB server:
+backend:
 
 ```bash
 python create_admin.py
@@ -217,6 +379,68 @@ Role: Administrator
 
 Change the development password before using this outside a local test
 environment. For production, create users through a secure provisioning flow.
+
+### Choosing a Backend
+
+| Situation | Recommended backend |
+| --- | --- |
+| Existing MongoDB deployment | MongoDB |
+| Local development without MongoDB | SQLite3 |
+| Classroom or product demonstration | SQLite3 |
+| Several application instances sharing data | MongoDB |
+| Large, concurrent production workload | MongoDB |
+
+SQLite is excellent for getting started and for a single application process.
+MongoDB is the better choice when multiple instances, larger workloads, or
+centralized database operations are required.
+
+### Change Storage from the Admin Page
+
+After signing in as an administrator, open **Administration** and find
+**Backend storage**. Select MongoDB or SQLite3, enter the required connection
+details, and choose **Test and save storage**.
+
+The **Check connection** button runs the same availability test without writing
+anything. It reports whether the selected driver is installed and whether the
+backend is reachable with the values currently in the form. The page also
+shows the health of the backend currently used by the running application.
+
+Taskr performs a connectivity check before writing anything. MongoDB settings
+are tested with a short timeout and SQLite settings are tested by opening the
+configured file path. If the check fails, the `.env` file is left unchanged.
+
+The check endpoint is available only to authenticated administrators at
+`/admin/storage/check`; it is not a public database diagnostic endpoint.
+
+For MongoDB, you may provide a complete URI or provide a URI plus username and
+password. Taskr URL-encodes supplied credentials and stores the resulting URI
+in the local `.env` file. The password is not shown again in the admin page or
+in error messages.
+
+The new configuration applies after Taskr automatically restarts. The save
+request returns its success response first, then the direct Flask process
+replaces itself and reloads `.env`. This restart is intentional: database
+clients are initialized when the Flask application starts, and changing a live
+connection underneath active requests is unsafe.
+
+When running behind Gunicorn, Docker, systemd, or another process manager,
+configure that manager to restart the web process after the storage settings
+change. Process managers own the application lifecycle and should be allowed
+to restart workers rather than having an individual worker replace itself.
+
+**Important:** database storage must be provisioned and reachable before using
+the settings form. Changing the backend does not migrate or copy existing
+records. Back up the current database and plan a migration before switching a
+real installation.
+
+Recommended practice:
+
+- Use SQLite3 for a single-user local installation, testing, or a demo.
+- Use MongoDB for shared deployments and multiple application processes.
+- Keep `.env` permissions private; Taskr attempts to set them to `600` on Unix-like systems.
+- Use a secrets manager instead of storing credentials in `.env` for production.
+- Use a dedicated MongoDB user with only the permissions Taskr needs.
+- Back up data before changing storage configuration.
 
 ### 7. Run Taskr
 

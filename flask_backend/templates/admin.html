@@ -74,5 +74,69 @@
             </div>
         </div>
     </section>
+
+    <section class="card shadow-sm mt-4">
+        <div class="card-body p-4">
+            <h2 class="h5">Backend storage</h2>
+            <p class="text-muted">Choose where Taskr stores its data. The selected backend must be available and reachable before you save these settings.</p>
+            <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i><strong>Important:</strong> validate that MongoDB or the SQLite file location is available before changing storage. Taskr automatically restarts after a successful save.</div>
+            <div class="alert {% if storage_health.reachable %}alert-success{% else %}alert-danger{% endif %}" role="status">
+                <strong>Current {{ storage_health.backend|upper }} status:</strong> {{ storage_health.message }}
+            </div>
+            <form method="POST" action="{{ url_for('routes.update_storage') }}" id="storageForm">
+                <div class="mb-3">
+                    <label class="form-label" for="backend">Database backend</label>
+                    <select class="form-select" id="backend" name="backend">
+                        <option value="mongo" {% if storage.backend == 'mongo' %}selected{% endif %}>MongoDB</option>
+                        <option value="sqlite" {% if storage.backend == 'sqlite' %}selected{% endif %}>SQLite3</option>
+                    </select>
+                </div>
+                <div id="mongoSettings" class="row g-3">
+                    <div class="col-12"><label class="form-label" for="mongoUri">MongoDB URI / URL</label><input class="form-control" id="mongoUri" name="mongo_uri" value="{{ storage.mongo_uri }}" placeholder="mongodb://host:27017/taskr"></div>
+                    <div class="col-md-6"><label class="form-label" for="mongoUsername">Username <span class="text-muted">(optional)</span></label><input class="form-control" id="mongoUsername" name="mongo_username" autocomplete="username"></div>
+                    <div class="col-md-6"><label class="form-label" for="mongoPassword">Password <span class="text-muted">(optional)</span></label><input class="form-control" id="mongoPassword" name="mongo_password" type="password" autocomplete="new-password"></div>
+                    <div class="col-12"><small class="text-muted">Credentials are combined into the URI, URL-encoded, and written to the local `.env` file. They are never displayed again.</small></div>
+                </div>
+                <div id="sqliteSettings" class="mb-3">
+                    <label class="form-label" for="sqlitePath">SQLite3 file path</label>
+                    <input class="form-control" id="sqlitePath" name="sqlite_path" value="{{ storage.sqlite_path }}" placeholder="taskr.sqlite3">
+                    <small class="text-muted">Use a path writable by the user running Taskr. SQLite3 needs no separate server.</small>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <button class="btn btn-outline-primary" id="checkStorageButton" type="button"><i class="bi bi-plug me-1"></i> Check connection</button>
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-database-check me-1"></i> Test and save storage</button>
+                    <span class="small" id="storageCheckResult" role="status" aria-live="polite"></span>
+                </div>
+            </form>
+        </div>
+    </section>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const backend = document.getElementById("backend");
+    const mongoSettings = document.getElementById("mongoSettings");
+    const sqliteSettings = document.getElementById("sqliteSettings");
+    function toggleStorageFields() {
+        const mongoSelected = backend.value === "mongo";
+        mongoSettings.hidden = !mongoSelected;
+        sqliteSettings.hidden = mongoSelected;
+    }
+    backend.addEventListener("change", toggleStorageFields);
+    toggleStorageFields();
+    document.getElementById("checkStorageButton").addEventListener("click", async function () {
+        const result = document.getElementById("storageCheckResult");
+        result.className = "small text-muted";
+        result.textContent = "Checking...";
+        try {
+            const response = await fetch("{{ url_for('routes.check_storage') }}", { method: "POST", body: new FormData(document.getElementById("storageForm")) });
+            const data = await response.json();
+            result.className = data.reachable ? "small text-success" : "small text-danger";
+            result.textContent = data.message;
+        } catch (error) {
+            result.className = "small text-danger";
+            result.textContent = "Unable to complete the connection check.";
+        }
+    });
+});
+</script>
 {% endblock %}
