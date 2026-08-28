@@ -2,17 +2,134 @@
 
 {% block title %}Taskr | Welcome{% endblock %}
 
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="landing-page">
-    <div class="landing-content">
-        <a class="brand" href="{{ url_for('routes.index') }}">
-            <span class="brand-mark"><i class="bi bi-check2"></i></span>
+<div class="landing-page-enhanced">
+    <div class="landing-content-enhanced">
+        
+        <!-- Brand -->
+        <a class="brand-enhanced" href="{{ url_for('routes.index') }}">
+            <span class="brand-mark-enhanced"><i class="bi bi-check2"></i></span>
             <span>Taskr</span>
         </a>
-        <h1>Authorized users can access the Task trackeR application.</h1>
-        <a class="button button-primary" href="{{ url_for('routes.login') }}">
-            Sign in <i class="bi bi-arrow-right"></i>
+
+          <!-- Version Badge -->
+        <div class="version-badge fade-in-item">
+            <i class="bi bi-stars"></i> v2026.08.28.01
+        </div>
+
+        <!-- Main Heading -->
+        <h1 class="landing-heading-enhanced fade-in-item">
+            Track your work.<br>Measure your progress.<br><span class="highlight-text">Achieve more.</span>
+        </h1>
+        
+        <!-- Subtitle -->
+        <p class="landing-message-enhanced fade-in-item">
+            Authorized users can access the Task trackeR application. 
+            Streamline your workflow with powerful task management, 
+            visual kanban boards, and insightful analytics.
+        </p>
+        
+        <!-- CTA Button -->
+        <a class="button-enhanced fade-in-item" href="{{ url_for('routes.login') }}">
+            Sign in to continue <i class="bi bi-arrow-right"></i>
         </a>
+        
+        <!-- Features -->
+        <div class="landing-features fade-in-item">
+            <div class="feature-item">
+                <i class="bi bi-kanban"></i> Kanban Boards
+            </div>
+            <div class="feature-item">
+                <i class="bi bi-graph-up"></i> Analytics
+            </div>
+            <div class="feature-item">
+                <i class="bi bi-journal-text"></i> Work Journal
+            </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="landing-stats fade-in-item">
+            <div class="stat-item">
+                <div class="stat-value">100%</div>
+                <div class="stat-label">Secure</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">24/7</div>
+                <div class="stat-label">Available</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">∞</div>
+                <div class="stat-label">Possibilities</div>
+            </div>
+        </div>
+        
+        <!-- Help Links -->
+        <div class="help-links fade-in-item">
+            <a href="#" class="help-link">
+                <i class="bi bi-question-circle"></i> Help Center
+            </a>
+            <a href="#" class="help-link">
+                <i class="bi bi-shield-check"></i> Privacy Policy
+            </a>
+            <a href="#" class="help-link">
+                <i class="bi bi-envelope"></i> Contact Support
+            </a>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Add subtle parallax effect on mouse move
+    document.addEventListener('DOMContentLoaded', function() {
+        const landingPage = document.querySelector('.landing-page-enhanced');
+        if (!landingPage) return;
+        
+        let rafId = null;
+        
+        landingPage.addEventListener('mousemove', function(e) {
+            if (rafId) {
+                cancelAnimationFrame(rafId);
+            }
+            
+            rafId = requestAnimationFrame(function() {
+                const { clientX, clientY } = e;
+                const { innerWidth, innerHeight } = window;
+                
+                const xPos = (clientX / innerWidth - 0.5) * 20;
+                const yPos = (clientY / innerHeight - 0.5) * 20;
+                
+                const brand = landingPage.querySelector('.brand-enhanced');
+                const heading = landingPage.querySelector('.landing-heading-enhanced');
+                const button = landingPage.querySelector('.button-enhanced');
+                
+                if (brand) {
+                    brand.style.transform = `translate(${xPos * 0.3}px, ${yPos * 0.3}px)`;
+                }
+                
+                if (heading) {
+                    heading.style.transform = `translate(${xPos * 0.2}px, ${yPos * 0.2}px)`;
+                }
+                
+                if (button) {
+                    button.style.transform = `translate(${xPos * 0.1}px, ${yPos * 0.1}px)`;
+                }
+            });
+        });
+        
+        // Reset transforms on mouse leave
+        landingPage.addEventListener('mouseleave', function() {
+            const elements = landingPage.querySelectorAll('.brand-enhanced, .landing-heading-enhanced, .button-enhanced');
+            elements.forEach(el => {
+                el.style.transform = 'translate(0, 0)';
+                el.style.transition = 'transform 0.3s ease';
+            });
+        });
+    });
+</script>
 {% endblock %}
